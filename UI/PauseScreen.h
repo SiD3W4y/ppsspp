@@ -53,6 +53,9 @@ private:
 	UI::EventReturn OnSwitchUMD(UI::EventParams &e);
 	UI::EventReturn OnState(UI::EventParams &e);
 
+    UI::EventReturn OnTracingEnable(UI::EventParams &e);
+    UI::EventReturn OnTracingDisable(UI::EventParams &e);
+
 	// hack
 	bool finishNextFrame_ = false;
 	std::string gamePath_;

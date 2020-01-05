@@ -381,12 +381,23 @@ void GamePauseScreen::CreateViews() {
 		rightColumnItems->Add(new Choice(rp->T("ReportButton", "Report Feedback")))->OnClick.Handle(this, &GamePauseScreen::OnReportFeedback);
 	}
 	rightColumnItems->Add(new Spacer(25.0));
+
+    // Tracing button
+    if (!g_Config.bBranchTracing) {
+        rightColumnItems->Add(new Choice("Enable Branch Tracing"))->OnClick.Handle(this, &GamePauseScreen::OnTracingEnable);
+    }
+    else
+    {
+        rightColumnItems->Add(new Choice("Disable Branch Tracing"))->OnClick.Handle(this, &GamePauseScreen::OnTracingDisable);
+    }
+
 	if (g_Config.bPauseMenuExitsEmulator) {
 		I18NCategory *mm = GetI18NCategory("MainMenu");
 		rightColumnItems->Add(new Choice(mm->T("Exit")))->OnClick.Handle(this, &GamePauseScreen::OnExitToMenu);
 	} else {
 		rightColumnItems->Add(new Choice(pa->T("Exit to menu")))->OnClick.Handle(this, &GamePauseScreen::OnExitToMenu);
 	}
+
 }
 
 UI::EventReturn GamePauseScreen::OnGameSettings(UI::EventParams &e) {
@@ -457,6 +468,20 @@ UI::EventReturn GamePauseScreen::OnCwCheat(UI::EventParams &e) {
 UI::EventReturn GamePauseScreen::OnSwitchUMD(UI::EventParams &e) {
 	screenManager()->push(new UmdReplaceScreen());
 	return UI::EVENT_DONE;
+}
+
+// Tracing
+UI::EventReturn GamePauseScreen::OnTracingEnable(UI::EventParams &e) {
+    g_Config.bBranchTracing = true;
+    g_Config.bBranchTracingDump = false;
+
+    return UI::EVENT_DONE;
+}
+
+UI::EventReturn GamePauseScreen::OnTracingDisable(UI::EventParams &e) {
+    g_Config.bBranchTracingDump = true;
+
+    return UI::EVENT_DONE;
 }
 
 void GamePauseScreen::CallbackDeleteConfig(bool yes)

@@ -16,11 +16,15 @@
 // https://github.com/hrydgard/ppsspp and http://www.ppsspp.org/.
 
 #include <cmath>
+#include <map>
+#include <sstream>
+#include <string>
 
 #include "math/math_util.h"
 
 #include "Common/Common.h"
 #include "Common/BitScan.h"
+#include "Common/FileUtil.h"
 #include "Core/Config.h"
 #include "Core/Core.h"
 #include "Core/Host.h"
@@ -52,11 +56,46 @@
 #define HI currentMIPS->hi
 #define LO currentMIPS->lo
 
+static std::map<u32, u32> branch_targets;
+
+static void dump_branches() {
+    File::IOFile f("trace.txt", "wb");
+    std::stringstream stream;
+
+    for (auto v : branch_targets) {
+        stream << "0x" << std::hex << v.first << " ";
+        stream << std::dec << v.second << "\n";
+    }
+
+    std::string res = stream.str();
+    f.WriteBytes(res.c_str(), res.size());
+}
+
 static inline void DelayBranchTo(u32 where)
 {
 	PC += 4;
 	mipsr4k.nextPC = where;
 	mipsr4k.inDelaySlot = true;
+
+    // Tracing
+    if (g_Config.bBranchTracingDump)
+    {
+        INFO_LOG(CPU, "%d branch targets collected", branch_targets.size());
+
+        dump_branches();
+        branch_targets.clear();
+
+        g_Config.bBranchTracing = false;
+        g_Config.bBranchTracingDump = false;
+    }
+
+    if (g_Config.bBranchTracing)
+    {
+        if (branch_targets.find(where) != branch_targets.end())
+            branch_targets[where]++;
+        else
+            branch_targets[where] = 1;
+    }
 }
 
 static inline void SkipLikely()

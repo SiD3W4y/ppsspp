@@ -57,6 +57,12 @@ public:
 	bool bAutoRun;  // start immediately
 	bool bBrowse; // when opening the emulator, immediately show a file browser
 
+    bool bBranchTracing = false; // Is currently tracing branches
+
+    // Should dump trace on next branch. This is mostly a ugly hack to not have
+    // to patch all kind of things and keep the modifications to a minimum.
+    bool bBranchTracingDump = false;
+
 	// General
 	int iNumWorkerThreads;
 	bool bScreenshotsAsPNG;
@@ -78,7 +84,6 @@ public:
 	std::string sFont;
 
 	bool bPauseWhenMinimized;
-
 	// Not used on mobile devices.
 	bool bPauseExitsEmulator;
 
