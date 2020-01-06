@@ -16,6 +16,7 @@
 // https://github.com/hrydgard/ppsspp and http://www.ppsspp.org/.
 
 #include "Common/StringUtils.h"
+#include "Core/MemMapHelpers.h"
 #include "Core/Core.h"
 #include "Core/CoreTiming.h"
 #include "Core/Debugger/Breakpoints.h"
@@ -24,6 +25,8 @@
 #include "Core/HLE/sceKernelThread.h"
 #include "Core/MIPS/MIPS.h"
 #include "Core/MIPS/MIPSDebugInterface.h"
+
+void WebSocketCPUReadMemory(DebuggerRequest &req);
 
 DebuggerSubscriber *WebSocketCPUCoreInit(DebuggerEventHandlerMap &map) {
 	// No need to bind or alloc state, these are all global.
@@ -34,6 +37,7 @@ DebuggerSubscriber *WebSocketCPUCoreInit(DebuggerEventHandlerMap &map) {
 	map["cpu.getReg"] = &WebSocketCPUGetReg;
 	map["cpu.setReg"] = &WebSocketCPUSetReg;
 	map["cpu.evaluate"] = &WebSocketCPUEvaluate;
+    map["cpu.memory.read"] = &WebSocketCPUReadMemory;
 
 	return nullptr;
 }
@@ -409,4 +413,44 @@ void WebSocketCPUEvaluate(DebuggerRequest &req) {
 	JsonWriter &json = req.Respond();
 	json.writeUint("uintValue", val);
 	json.writeString("floatValue", RegValueAsFloat(val));
+}
+
+// Memory operations
+// Read memory (cpu.memory.read)
+//
+// Parameters:
+//  - address: Target address
+//  - length:  Number of bytes to read
+//
+// Response (same event name):
+//  - payload: Hexstring representing the read data
+void WebSocketCPUReadMemory(DebuggerRequest &req)
+{
+    u32 address;
+    u32 size;
+
+    if (!req.ParamU32("address", &address))
+        return;
+
+    if (!req.ParamU32("size", &size))
+        return;
+
+    // Read data (address must be valid)
+    u8 *data = new u8[size];
+    Memory::Memcpy(data, address, size);
+
+    std::string hexresult = "";
+    const char *hexchars = "0123456789abcdef";
+
+    for (u32 i = 0; i < size; i++)
+    {
+        u8 c = data[i];
+        hexresult += hexchars[(c >> 4) & 0xf];
+        hexresult += hexchars[c & 0xf];
+    }
+
+    JsonWriter &json = req.Respond();
+    json.writeString("payload", hexresult);
+
+    delete[] data;
 }
