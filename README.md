@@ -23,6 +23,12 @@ For build instructions and other development tutorials, see [the wiki](https://g
 
 For game compatibility, see [community compatibility feedback](https://report.ppsspp.org/games).
 
+About this fork
+---------------
+
+This forks adds branch and call tracing capabilities to the emulator while in 'Interpreter' mode. The option is accessible from the pause menu
+while inside a game. The trace is in a simple text format to be easily manipulated or integrated into other tools.
+
 What's new in 1.9.0/1.9.3
 -------------------------
 * Sizing/touch fixes on Android
