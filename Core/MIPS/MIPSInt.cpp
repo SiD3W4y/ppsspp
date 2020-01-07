@@ -57,18 +57,34 @@
 #define LO currentMIPS->lo
 
 static std::map<u32, u32> branch_targets;
+static std::map<u32, u32> call_targets;
 
 static void dump_branches() {
     File::IOFile f("trace.txt", "wb");
     std::stringstream stream;
 
     for (auto v : branch_targets) {
-        stream << "0x" << std::hex << v.first << " ";
+        stream << "BRANCH 0x" << std::hex << v.first << " ";
+        stream << std::dec << v.second << "\n";
+    }
+
+    for (auto v : call_targets) {
+        stream << "CALL 0x" << std::hex << v.first << " ";
         stream << std::dec << v.second << "\n";
     }
 
     std::string res = stream.str();
     f.WriteBytes(res.c_str(), res.size());
+}
+
+static inline void RecordCall(u32 where)
+{
+    if (g_Config.bBranchTracing) {
+        if (call_targets.find(where) != call_targets.end())
+            call_targets[where]++;
+        else
+            call_targets[where] = 1;
+    }
 }
 
 static inline void DelayBranchTo(u32 where)
@@ -294,6 +310,7 @@ namespace MIPSInt
 		case 2: DelayBranchTo(addr); break; //j
 		case 3: //jal
 			R(31) = PC + 8;
+            RecordCall(addr);
 			DelayBranchTo(addr);
 			break;
 		default:
@@ -324,6 +341,8 @@ namespace MIPSInt
 		case 9: //jalr
 			if (rd != 0)
 				R(rd) = PC + 8;
+
+            RecordCall(addr);
 			DelayBranchTo(addr);
 			break;
 		}
