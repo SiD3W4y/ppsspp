@@ -27,6 +27,7 @@
 #include "Core/MIPS/MIPSDebugInterface.h"
 
 void WebSocketCPUReadMemory(DebuggerRequest &req);
+void WebSocketCPUWriteMemory(DebuggerRequest &req);
 
 DebuggerSubscriber *WebSocketCPUCoreInit(DebuggerEventHandlerMap &map) {
 	// No need to bind or alloc state, these are all global.
@@ -38,6 +39,7 @@ DebuggerSubscriber *WebSocketCPUCoreInit(DebuggerEventHandlerMap &map) {
 	map["cpu.setReg"] = &WebSocketCPUSetReg;
 	map["cpu.evaluate"] = &WebSocketCPUEvaluate;
     map["cpu.memory.read"] = &WebSocketCPUReadMemory;
+    map["cpu.memory.write"] = &WebSocketCPUWriteMemory;
 
 	return nullptr;
 }
@@ -453,4 +455,56 @@ void WebSocketCPUReadMemory(DebuggerRequest &req)
     json.writeString("payload", hexresult);
 
     delete[] data;
+}
+
+static u8 hexcharToByte(u8 c)
+{
+    if (c >= '0' && c <= '9')
+        return c - '0';
+
+    if (c >= 'a' && c <= 'f')
+        return (c - 'a') + 10;
+
+    if (c >= 'A' && c <= 'F')
+        return (c - 'A') + 10;
+
+    return 0;
+}
+
+// Write memory (cpu.memory.write)
+//
+// Parameters:
+//  - address: Target address
+//  - payload: Hexstring representing the data to write to memory.
+void WebSocketCPUWriteMemory(DebuggerRequest &req)
+{
+    // TODO: Clean crude implementation
+    const char *data = req.data.getString("payload", nullptr);
+    u32 address;
+
+    if (!data)
+        return;
+
+    if (!req.ParamU32("address", &address))
+        return;
+
+    std::string payload(data);
+    int payloadSize = payload.size();
+
+    // TODO: Add error checking and reporting
+    if (payloadSize % 2 != 0)
+        return;
+
+    const char *hexchars = "0123456789abcdef";
+    u8 *processed = new u8[payloadSize / 2];
+
+    for (int i = 0; i < (payloadSize / 2); i++)
+    {
+        u8 hi = hexcharToByte(payload[2 * i]);
+        u8 lo = hexcharToByte(payload[(2 * i) + 1]);
+        processed[i] = hi << 4 | lo;
+    }
+
+    Memory::Memcpy(address, processed, payloadSize / 2);
+    delete[] processed;
 }
